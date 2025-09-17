@@ -158,12 +158,14 @@ function drawBarChart(entries) {
   const values = entries.map(e => e[1]);
   const max = Math.max(...values);
 
-  const padding = 50;
+  const padding = 60;              // more padding
+  const bottomSpace = 50;          // extra space for labels
+  const topSpace = 40;             // extra space for hours
   const chartW = canvas.width - padding * 2;
-  const chartH = canvas.height - padding * 2;
+  const chartH = canvas.height - padding - bottomSpace - topSpace;
 
-  const barWidth = chartW / values.length * 0.6;
-  const gap = chartW / values.length * 0.4;
+  const barWidth = chartW / values.length * 0.5;
+  const gap = chartW / values.length * 0.5;
 
   // Axes
   ctx.strokeStyle = '#000';
@@ -176,38 +178,57 @@ function drawBarChart(entries) {
 
   for (let i = 0; i < values.length; i++) {
     const barX = padding + i * (barWidth + gap) + gap / 2;
-    const barHeight = max === 0 ? 0 : (values[i] / max) * (chartH - 20);
+    const barHeight = max === 0 ? 0 : (values[i] / max) * chartH;
     const barY = padding + chartH - barHeight;
 
     // 🔹 Bar
     ctx.fillStyle = '#1976d2';
     ctx.fillRect(barX, barY, barWidth, barHeight);
-    ctx.strokeStyle = '#000';
-    ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-    // 🔹 Duration above bar (center aligned with bar)
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 11px Arial';
+    // 🔹 Hours above bar (large, padded)
+    const text = msToHuman(values[i]);
+    ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(msToHuman(values[i]), barX + barWidth / 2, barY - 6);
+    ctx.textBaseline = 'middle';
 
-    // 🔹 Website label (truncate >13 chars)
+    const metrics = ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = 12;
+    const boxPadding = 3;
+
+    const textX = barX + barWidth / 2;
+    const textY = barY - 14;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; // white bg
+    ctx.fillRect(
+      textX - textWidth / 2 - boxPadding,
+      textY - textHeight / 2 - boxPadding,
+      textWidth + boxPadding * 2,
+      textHeight + boxPadding * 2
+    );
+
+    ctx.fillStyle = '#000';
+    ctx.fillText(text, textX, textY);
+
+    // 🔹 Website label (small, tilted)
     let label = labels[i];
     if (label.length > 13) {
       label = label.slice(0, 13) + '...';
     }
 
-    // Place centered under bar
     ctx.save();
-    ctx.translate(barX + barWidth / 2, padding + chartH + 15);
-    ctx.rotate(-Math.PI / 6); // tilt 30° if needed
-    ctx.font = 'bold 10px Arial';
+    ctx.translate(barX + barWidth / 2, padding + chartH + 20); // place below
+    ctx.rotate(-Math.PI / 6); // 30° tilt
+    ctx.font = 'bold 12px Arial';
     ctx.fillStyle = '#000';
-    ctx.textAlign = 'center'; // ✅ keep centered with bar
+    ctx.textAlign = 'right';
     ctx.fillText(label, 0, 0);
     ctx.restore();
   }
 }
+
+
+
 
 
 
