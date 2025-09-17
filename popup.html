@@ -1,155 +1,101 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Activity Dashboard</title>
-  <link rel="stylesheet" href="popup.css" />
-  
-</head>
-<body>
-  <div class="container">
-        <header class="topbar">
-        <h1>Activity Dashboard</h1> 
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activity Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="libs/chart.js"></script>
+    <script type="module" src="utils.js"></script>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="topbar">
+        <h1>Activity Dashboard</h1>
         <div class="date-pill">
-        <span id="today"></span>
-        <div class="controls">
+          <span id="today"></span>
+          <div class="controls">
             <select id="rangeSelect">
-            <option value="today" selected>Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
+              <option value="today" selected>Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
             </select>
+          </div>
+          <button id="exportBtn" class="btn">Export CSV</button>
+          <button id="clearBtn" title="Clear local data" class="btn danger">
+            Reset
+          </button>
         </div>
-        <button id="exportBtn" class="btn">Export CSV</button>
-        <button id="clearBtn" title="Clear local data" class="btn danger">Reset</button>
-        </div>        
-    </header>
+      </header>
 
-    <main class="grid">
+      <main class="grid">
+        <section class="card">
+          <div class="card-head">
+            <h2>Today</h2>
+          </div>
+          <div class="flex" style="display: flex; gap: 20px">
+            <canvas width="400" height="220" id="todayDonut"></canvas>
+            <div class="stats" id="todayStats" style="flex: 1"></div>
+          </div>
+        </section>
 
-       <section class="card">
-            <div class="card-head">
-                <h2>Today</h2>                
-            </div>
-            <div class="flex" style="display:flex; gap:20px;">
-  <!-- Donut chart -->
-  <canvas width="400" height="220" id="todayDonut"></canvas>
-  <!-- Stats table -->
-  <div class="stats" id="todayStats"></div>
-</div>
+        <section class="card" id="summary">
+          <h2>Top Sites</h2>
+          <table
+            style="
+              border-collapse: collapse;
+              width: 100%;
+              font-family: Arial, sans-serif;
+            "
+          >
+            <thead>
+              <tr>
+                <th
+                  style="
+                    text-align: left;
+                    padding: 8px;
+                    font-weight: bold;
+                    border-bottom: 1px solid #ccc;
+                  "
+                >
+                  Website
+                </th>
+                <th
+                  style="
+                    text-align: left;
+                    padding: 8px;
+                    font-weight: bold;
+                    border-bottom: 1px solid #ccc;
+                  "
+                >
+                  Hours
+                </th>
+              </tr>
+            </thead>
+            <tbody id="topBody"></tbody>
+          </table>
+          <button>Previous</button>
+          <button>Next</button>
+        </section>
 
-<!-- Load Chart.js -->  
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  // Dummy data in same format as your app
-  const data = {
-    "2025-09-17": {
-      "youtube.com": 7200000,        // 2h
-      "github.com": 3600000,         // 1h
-      "eventible.com": 5400000,      // 1.5h
-      "chromewebstore.google.com": 4500000, // 1.25h
-      "gmail.com": 1800000           // 0.5h
-    }
-  };
+        <section class="card" id="chartSection">
+          <h2>Distribution</h2>
+          <canvas id="barCanvas" width="600" height="400"></canvas>
+        </section>
 
-  function renderChartAndTable(data) {
-  const dateKeys = Object.keys(data).sort((a,b)=>b.localeCompare(a));
-  if (dateKeys.length === 0) {
-    document.getElementById("todayStats").textContent = "No stored data.";
-    return;
-  }
+        <section class="card" id="history">
+          <h2>Raw Data (by day)</h2>
+          <div id="rawData">Loading…</div>
+        </section>
+      </main>
 
-  // Take latest day
-  const latestDay = dateKeys[0];
-  const items = Object.entries(data[latestDay])
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,5);
+      <footer>
+        <small>All data stored locally in this browser.</small>
+      </footer>
+    </div>
 
-  const sites = items.map(it => it[0]);
-  const hours = items.map(it => parseFloat((it[1] / 3600000).toFixed(2))); // ✅ numeric
-
-  const total = hours.reduce((a,b)=>a+b,0);
-
-  // ✅ Donut Chart
-  const ctx = document.getElementById("todayDonut").getContext("2d");
-  if (window.todayChart) window.todayChart.destroy(); // ✅ prevent duplicate
-  window.todayChart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: sites,
-      datasets: [{
-        data: hours,
-        backgroundColor: ["#ff0000","#4285f4","#6e5494","#34a853","#fbbc05"],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      plugins: { legend: { position: "right" } },
-      cutout: "65%"
-    }
-  });
-
-  // ✅ Table
-  let tableHTML = `
-    <table style="border-collapse: collapse; width: 100%; font-family: Arial;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px; font-weight:bold; border-bottom:1px solid #ccc;">Website</th>
-          <th style="text-align:left; padding:6px; font-weight:bold; border-bottom:1px solid #ccc;">Hours</th>
-          <th style="text-align:left; padding:6px; font-weight:bold; border-bottom:1px solid #ccc;">%</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-  items.forEach(([site, ms], i) => {
-    const hrs = hours[i];
-    const pct = ((hrs/total)*100).toFixed(1);
-    tableHTML += `
-      <tr>
-        <td style="padding:6px; border-bottom:1px solid #ccc;">${site}</td>
-        <td style="padding:6px; border-bottom:1px solid #ccc;">${hrs}</td>
-        <td style="padding:6px; border-bottom:1px solid #ccc;">${pct}%</td>
-      </tr>`;
-  });
-  tableHTML += `</tbody></table>`;
-  document.getElementById("todayStats").innerHTML = tableHTML;
-}
-
-</script>
-
-      </section>
-
-
-      <section  class="card"id="summary">
-        <h2>Top Sites</h2>
-            <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; ">
-                <thead>
-                    <tr>
-                    <th style="text-align: left; padding: 8px; font-weight: bold; border-bottom: 1px solid #ccc;">Website</th>
-                    <th style="text-align: left; padding: 8px; font-weight: bold; border-bottom: 1px solid #ccc; ">Hours</th>
-                    </tr>   
-                </thead>
-        <tbody id="topBody"></tbody>                
-            </table>
-      </section>
-
-      <section  class="card" id="chartSection">
-        <h2>Distribution</h2>
-        <canvas id="barCanvas"  width="600" height="400"></canvas>
-      </section>
-
-      <section class="card" id="history">
-        <h2>Raw Data (by day)</h2>
-        <div id="rawData">Loading…</div>
-      </section>
-    </main>
-
-    <footer>
-      <small>All data stored locally in this browser.</small>
-    </footer>
-  </div>
-
-  <script src="utils.js"></script>
-  <script src="popup.js"></script>
-</body>
+    <script src="utils.js"></script>
+    <script src="popup.js"></script>
+  </body>
 </html>
