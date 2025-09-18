@@ -315,12 +315,18 @@ function renderChartAndTable(data) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const sites = items.map((it) => it[0].slice(0, 16) + "...");
-  const hours = items.map((it) => parseFloat((it[1] / 3600000).toFixed(2)));
+  // ✅ Show website names (shortened if needed)
+  const sites = items.map((it) =>
+    it[0].length > 16 ? it[0].slice(0, 16) + "..." : it[0]
+  );
 
-  const total = hours.reduce((a, b) => a + b, 0);
+  // ✅ Use raw milliseconds for chart (so seconds also visible)
+  const values = items.map((it) => it[1]); 
 
-  // ✅ Donut Chart
+  // ✅ Convert ms → human readable for table
+  const totalMs = values.reduce((a, b) => a + b, 0);
+
+  // Donut Chart
   const ctx = document.getElementById("todayDonut").getContext("2d");
   if (window.todayChart) window.todayChart.destroy();
   window.todayChart = new Chart(ctx, {
@@ -329,7 +335,7 @@ function renderChartAndTable(data) {
       labels: sites,
       datasets: [
         {
-          data: hours,
+          data: values, // 🔹 keep ms, no division
           backgroundColor: [
             "#ff0000",
             "#4285f4",
@@ -342,16 +348,25 @@ function renderChartAndTable(data) {
       ],
     },
     options: {
-      responsive: true, // <-- important
+      responsive: true,
       maintainAspectRatio: false,
       layout: {
-      padding: 20   // ✅ adds 20px padding on all sides
-    },
+        padding: 20,
+      },
       plugins: {
         legend: {
           position: "right",
           labels: {
-            padding: 20, // space between legend and chart
+            padding: 20,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              // ✅ Show human readable in tooltip
+              const ms = context.raw;
+              return msToHuman(ms);
+            },
           },
         },
       },
@@ -359,3 +374,4 @@ function renderChartAndTable(data) {
     },
   });
 }
+
