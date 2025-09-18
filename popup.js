@@ -90,18 +90,29 @@ function msToHuman(ms) {
   return parts.join(" ");
 }
 
+
+let currentPage = 0;   // 🔹 track page
+const pageSize = 10;   // 🔹 10 rows per page
+let entries = [];      // 🔹 store all entries globally
+
 async function render() {
   const data = await fetchStorage();
-  let currentPage = 0;
-  const pageSize = 10;
-  let currentEntries = [];
   const range = document.getElementById("rangeSelect").value;
   const tbody = document.getElementById("topBody");
   const agg = aggregateForRange(data, range);
 
-  const entries = Object.entries(agg).sort((a, b) => b[1] - a[1]);
-  //   const topList = document.getElementById('topList');
+  // 🔹 store entries for pagination
+  entries = Object.entries(agg).sort((a, b) => b[1] - a[1]);
+  currentPage = 0; // reset to first page
+  renderTable();
+  renderRawData(data);
+  drawBarChart(entries.slice(0, 8)); // still keep top 8 for chart
+}
+
+function renderTable() {
+  const tbody = document.getElementById("topBody");
   tbody.innerHTML = "";
+
   if (entries.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
@@ -110,55 +121,71 @@ async function render() {
     td.style.padding = "8px";
     tr.appendChild(td);
     tbody.appendChild(tr);
-    // topList.textContent = 'No data for this range.';
-    tbody.appendChild("");
-  } else {
-    const topN = Math.min(10, entries.length);
-
-    for (let i = 0; i < topN; i++) {
-      const [domain, ms] = entries[i];
-
-      const tr = document.createElement("tr");
-      const tdSite = document.createElement("td");
-      tdSite.textContent = `${i + 1}. ${domain}`;
-      tdSite.style.padding = "6px";
-      tdSite.style.borderBottom = "1px solid #333";
-
-      const tdHours = document.createElement("td");
-      tdHours.textContent = msToHuman(ms);
-      tdHours.style.padding = "6px";
-      tdHours.style.borderBottom = "1px solid #333";
-      tdHours.style.textAlign = "right"; // aligns under “Hours”
-
-      tr.appendChild(tdSite);
-      tr.appendChild(tdHours);
-      tbody.appendChild(tr);
-    }
+    return;
   }
 
-  // Draw simple bar chart on canvas
-  drawBarChart(entries.slice(0, 8));
+  // 🔹 slice entries for current page
+  const start = currentPage * pageSize;
+  const paginated = entries.slice(start, start + pageSize);
 
-  // Raw data
+  paginated.forEach(([domain, ms], i) => {
+    const tr = document.createElement("tr");
+
+    const tdSite = document.createElement("td");
+    tdSite.textContent = `${start + i + 1}. ${domain}`;
+    tdSite.style.padding = "6px";
+    tdSite.style.borderBottom = "1px solid #333";
+
+    const tdHours = document.createElement("td");
+    tdHours.textContent = msToHuman(ms);
+    tdHours.style.padding = "6px";
+    tdHours.style.borderBottom = "1px solid #333";
+    tdHours.style.textAlign = "right";
+
+    tr.appendChild(tdSite);
+    tr.appendChild(tdHours);
+    tbody.appendChild(tr);
+  
+    
+  });
+}
+
+function renderRawData(data) {
   const rawData = document.getElementById("rawData");
   rawData.innerHTML = "";
-  const dateKeys = Object.keys(data).sort((a, b) => b.localeCompare(a)); // newest first
+  const dateKeys = Object.keys(data).sort((a, b) => b.localeCompare(a));
   if (dateKeys.length === 0) {
     rawData.textContent = "No stored data.";
-  } else {
-    for (const d of dateKeys.slice(0, 20)) {
-      const day = document.createElement("div");
-      const items = Object.entries(data[d])
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
-      const itemsStr = items
-        .map((it) => `${it[0]}: ${msToHuman(it[1])}`)
-        .join(" | ");
-      day.textContent = `${d} → ${itemsStr}`;
-      rawData.appendChild(day);
-    }
+    return;
+  }
+  for (const d of dateKeys.slice(0, 20)) {
+    const day = document.createElement("div");
+    const items = Object.entries(data[d])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    const itemsStr = items
+      .map((it) => `${it[0]}: ${msToHuman(it[1])}`)
+      .join(" | ");
+    day.textContent = `${d} → ${itemsStr}`;
+    rawData.appendChild(day);
   }
 }
+
+// 🔹 Pagination buttons
+document.querySelector("#summary button:nth-of-type(1)").addEventListener("click", () => {
+  if (currentPage > 0) {
+    currentPage--;
+    renderTable();
+  }
+});
+
+document.querySelector("#summary button:nth-of-type(2)").addEventListener("click", () => {
+  if ((currentPage + 1) * pageSize < entries.length) {
+    currentPage++;
+    renderTable();
+  }
+});
+
 
 function drawBarChart(entries) {
   const canvas = document.getElementById("barCanvas");
@@ -288,7 +315,7 @@ function renderChartAndTable(data) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const sites = items.map((it) => it[0]);
+  const sites = items.map((it) => it[0].slice(0, 16) + "...");
   const hours = items.map((it) => parseFloat((it[1] / 3600000).toFixed(2)));
 
   const total = hours.reduce((a, b) => a + b, 0);
@@ -317,6 +344,9 @@ function renderChartAndTable(data) {
     options: {
       responsive: true, // <-- important
       maintainAspectRatio: false,
+      layout: {
+      padding: 20   // ✅ adds 20px padding on all sides
+    },
       plugins: {
         legend: {
           position: "right",

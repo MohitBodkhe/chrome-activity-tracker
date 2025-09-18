@@ -85,6 +85,38 @@ body {
   width: 100%;
 }
 
+.grid .card:nth-child(1),
+.grid .card:nth-child(2) {
+  flex: 1 1 50%;    /* each card 50% width */
+}
+
+.pagination {
+  position: sticky;
+  bottom: 0;
+  text-align: end;
+  padding: 10px 20px;
+}
+
+#tableWrapper {
+  height: calc(13 * 23px);  /* 🔹 10 rows × 32px (row height incl padding/border) */
+  overflow: hidden;         
+}
+
+#topBody tr {
+  height: 23px;             /* 🔹 consistent row height */
+}
+
+.pagination {
+  margin-top: 10px;
+  text-align: end;
+  margin-right: 20px;
+}
+
+.pagination .btn:hover {
+  background: #1d5ed6;
+}
+
+
 .card-head {
   display: flex;
   justify-content: space-between;

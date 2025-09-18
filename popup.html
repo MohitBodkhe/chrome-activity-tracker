@@ -42,41 +42,45 @@
 
         <section class="card" id="summary">
           <h2>Top Sites</h2>
-          <table
-            style="
-              border-collapse: collapse;
-              width: 100%;
-              font-family: Arial, sans-serif;
-            "
-          >
-            <thead>
-              <tr>
-                <th
-                  style="
-                    text-align: left;
-                    padding: 8px;
-                    font-weight: bold;
-                    border-bottom: 1px solid #ccc;
-                  "
-                >
-                  Website
-                </th>
-                <th
-                  style="
-                    text-align: left;
-                    padding: 8px;
-                    font-weight: bold;
-                    border-bottom: 1px solid #ccc;
-                  "
-                >
-                  Hours
-                </th>
-              </tr>
-            </thead>
-            <tbody id="topBody"></tbody>
-          </table>
-          <button>Previous</button>
-          <button>Next</button>
+          <div id="tableWrapper" style="min-height: 200px; ">
+            <table
+                style="
+                border-collapse: collapse;
+                width: 100%;
+                font-family: Arial, sans-serif;
+                "
+            >
+                <thead>
+                <tr>
+                    <th
+                    style="
+                        text-align: left;
+                        padding: 8px;
+                        font-weight: bold;
+                        border-bottom: 1px solid #ccc;
+                    "
+                    >
+                    Website
+                    </th>
+                    <th
+                    style="
+                        text-align: end;
+                        padding: 8px;
+                        font-weight: bold;
+                        border-bottom: 1px solid #ccc;
+                    "
+                    >
+                    Hours
+                    </th>
+                </tr>
+                </thead>
+                <tbody id="topBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" style="margin-top: 10px; text-align: end; margin-right: 10px;">
+            <button class="btn" style="margin-right: 10px;" id="prevBtn">Previous</button>
+            <button class="btn" id="nextBtn">Next</button>
+          </div>
         </section>
 
         <section class="card" id="chartSection">
